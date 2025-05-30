@@ -2,13 +2,17 @@ import { readdir, stat } from 'fs/promises';
 import path from 'path';
 import { writeFile } from 'fs/promises';
 
-const BASE_URL = 'https://anthonypero.github.io/files'; // Your GitHub Pages URL
+const BASE_URL = 'https://anthonypero.github.io/files';
 const OUTPUT_FILE = 'index.html';
 
+// Recursively walk a directory and return all non-hidden files
 async function walk(dir) {
     const entries = await readdir(dir, { withFileTypes: true });
     const files = await Promise.all(
         entries.map(async (entry) => {
+            // Skip hidden files/folders
+            if (entry.name.startsWith('.')) return [];
+
             const res = path.resolve(dir, entry.name);
             return entry.isDirectory() ? walk(res) : res;
         })
@@ -16,6 +20,7 @@ async function walk(dir) {
     return Array.prototype.concat(...files);
 }
 
+// Escape for HTML
 function escapeHTML(str) {
     return str
         .replace(/&/g, '&amp;')
@@ -23,6 +28,7 @@ function escapeHTML(str) {
         .replace(/>/g, '&gt;');
 }
 
+// Group files by folder
 function groupByFolder(files) {
     const map = {};
     for (const file of files) {
@@ -36,6 +42,7 @@ function groupByFolder(files) {
     return map;
 }
 
+// Main
 const allFiles = await walk('.');
 const grouped = groupByFolder(allFiles);
 
@@ -68,4 +75,4 @@ html += `
 </html>`;
 
 await writeFile(OUTPUT_FILE, html, 'utf8');
-console.log(`✅ index.html generated with ${allFiles.length} files`);
+console.log(`✅ index.html generated with ${allFiles.length} visible files`);
